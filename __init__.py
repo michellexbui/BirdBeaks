@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 '''
-google dat shit
+A package for interpolating magnetometer data to explore the effects of field changes on 
+migrating bird behavior and adaptations.
 '''
 
 # Import everything first!
@@ -9,10 +10,31 @@ import numpy as np
 from datetime import datetime as dt
 from scipy.interpolate import LinearNDInterpolator
 
-#Method which takes in geographic longitude, geographic latitude, and a string date & yields |B|
-class goodnessgracious(object):
+def ascii_to_pickle(supermag_file):
     '''
-    call it MagArray
+    Load a ascii-formatted SuperMag file and convert it to a 
+    Python pickle for fast loading later.
+    '''
+    import pickle
+
+    # Load ascii data.
+    raw = supermag.SuperMag(supermag_file, load_info=True)
+
+    # Get name for output file:
+    outname = '.'.join(supermag_file.split('.')[:-1]) + '.pkl'
+
+    # Open binary file, dump contents as a pickle:
+    out = open(outname, 'wb')
+    pickle.dump(raw, out)
+    out.close()
+
+    return True
+    
+#Method which takes in geographic longitude, geographic latitude, and a string date & yields |B|
+class MagArray(object):
+    '''
+    Load a SuperMAG data file and use the included data to explore
+    magnetic values at any arbitrary point.
     '''
     #Defining the input: longitude, latitude, and string date in the form of 'YYYY/MM/DD/hh/mm'
     def __init__(self, igeolon, igeolat, istrdt):
@@ -68,3 +90,10 @@ class goodnessgracious(object):
 
         # Test it!
         print('|B| at lon={}, lat={} is {:.3f}nT'.format(igeolon, igeolat, tri_int(igeolon, igeolat)))        
+
+
+if __name__ == "__main__":
+    '''
+    Run a quick test suite.
+    '''
+    pass
