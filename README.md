@@ -3,7 +3,7 @@
 A package for interpolating magnetic field data across CONUS to explore
 potential effects on migrating birds. 
 
-Magnetic field data was accessed through SuperMag, a global database of ground-based magnetometer data hosted by JHU Applied Physics Laboratory.
+Magnetic field data was accessed through SuperMag, a global database of ground-based magnetometer data hosted by JHU Applied Physics Laboratory. The region of data selected for the example data file includes the entire continental United States as well as Canada, Mexico, and the Carribean region for the most accurate interpolation
 
 # Bird Migrational Patterns and Their Relation to Magnetic Field Fluctuations
 
