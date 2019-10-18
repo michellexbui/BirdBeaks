@@ -8,7 +8,6 @@ migrating bird behavior and adaptations.
 import supermag
 import numpy as np
 from datetime import datetime as dt
-from scipy.interpolate import LinearNDInterpolator
 
 def ascii_to_pickle(supermag_file):
     '''
@@ -19,6 +18,7 @@ def ascii_to_pickle(supermag_file):
 
     # Load ascii data.
     raw = supermag.SuperMag(supermag_file, load_info=True)
+    raw.calc_btotal()
 
     # Get name for output file:
     outname = '.'.join(supermag_file.split('.')[:-1]) + '.pkl'
@@ -36,61 +36,92 @@ class MagArray(object):
     Load a SuperMAG data file and use the included data to explore
     magnetic values at any arbitrary point.
     '''
+    
     #Defining the input: longitude, latitude, and string date in the form of 'YYYY/MM/DD/hh/mm'
-    def __init__(self, igeolon, igeolat, istrdt):
-        self.igeolon = igeolon
-        self.igeolat = igeolat
-        self.istrdt  = istrdt
-
-        #me making sure this inputes the right values, probably unnecessary
-        print(igeolon)
-        print(igeolat)
-        print(istrdt)
-
-        #Turning this string 'YYYY/MM/DD/hh/mm' into a datetime
-        idt = dt.strptime(istrdt, '%Y/%m/%d/%H/%M')
+    def __init__(self, filename): #igeolon, igeolat, istrdt):
+        import pickle
         
-        #me printing it for my own sake
-        print(idt)
+        # Open the data file, store in a SuperMag object.
+        # If it's a pickle, unpickle it.  Otherwise, open the ASCII object.
+        if filename[-4:] == '.txt': # We have an ASCII file:
+            self.data = supermag.SuperMag(filename, load_info=True)
+            self.data.calc_btotal()
+        elif filename[-4:] == '.pkl': # We have a pickle!
+            raw = open(filename, 'rb')
+            self.data = pickle.load(raw)
+        else:
+            raise ValueError("Unknown file format for {}".format(filename))
 
-        # Open the data file, store in a SuperMag object:
-        data = supermag.SuperMag('./supermag_northamer_2001.txt', load_info=True)
-        
-        # For each magnetometer in our file, calculate |b|:
-        data.calc_btotal()
+        # Create dictionary to hold interpolator objects:
+        self.interp = {}
 
-        #Match time in array to input datetime
-        for n in range(0, len(data['time'])):
-            if data['time'][n] == idt:
-                fdt = data['time'][n]
-                print(fdt)
-                p = n #defining p to be n, the "slot" whose time matched the input time 
-                print(p)
-        
-        # Create empty arrays for lon/lat and b_total:
-        points = np.zeros( [len(data)-1, 2] )
-        b      = np.zeros( len(data)-1 )
-
-        # Get list of stations:
-        mags = list(data.keys())
+        # Store list of stations:
+        mags = list(self.data.keys())
         mags.remove('time')
+        
+        # For each station, save the lon/lat:
+        self.points = np.zeros( [len(self.data)-1, 2] )
+        for i, m in enumerate(mags):
+            self.points[i,:] = (self.data[m]['geolon'], self.data[m]['geolat'])
+        
+    def __call__(self, time, lon, lat):
+        '''
+        For a specific time (scalar), return $\Delta B$ at 
+        an arbitrary latitude and longitude.  
+        '''
 
+        # Check to make sure time does not exceed boundaries of
+        # loaded magnetometer data:
+        if time > self.data['time'][-1] or time<self.data['time'][0]:
+            print(f'Time requested = {time}')
+            print(f"Data time ranges from {self.data['time'][0]} to {self.data['time'][0]}")
+            raise ValueError('Time outside of data bounds!')
+
+        # POTENTIAL THING HERE: REDUCE DATETIME TO MINUTE RESOLUTION?
+        
+        # Find interpolator that matches this time.  If it doesn't exist, 
+        # make it and save it!
+        if time not in self.interp:
+            self._create_interp(time)
+
+        return self.interp[time](lon, lat)
+
+    def __str__(self):
+        '''
+        Make printing work good.
+        '''
+        return 'MagArray spanning T={},{}; lons={},{}; lats={},{}'.format(
+            self.data['time'][0], self.data['time'][-1],
+            self.points[:,0].min(), self.points[:,0].max(),
+            self.points[:,1].min(), self.points[:,1].max())
+            
+    
+    def _create_interp(self, time):
+        '''
+        For a given time, set up an interpolation object.
+        '''
+        from scipy.interpolate import LinearNDInterpolator
+
+        # Get position corresponding to current time.
+        loc = self.data['time'] == time
+                
+        # Create empty arrays for lon/lat and b_total:
+        b      = np.zeros( len(self.data)-1 )
+        
+        # Get list of stations:
+        mags = list(self.data.keys())
+        mags.remove('time')
+        
         # For each station, save the lon/lat and |b| for time zero:
         for i, m in enumerate(mags):
-            points[i,:] = (data[m]['geolon'], data[m]['geolat'])
-            b[i]        = data[m]['b'][p] # Get B at station m at time p as initiated above in line 39.
-
-        #make pickle from here
-        
+            b[i]        = self.data[m]['b'][loc]
+            
         # Create our interpolator object:
-        #also me wanting to see what values tri_int uses
-        #print(points)
-        #print(b)                      
-        tri_int = LinearNDInterpolator(points, b)
-
+        self.interp[time] = LinearNDInterpolator(self.points, b)
+        
         # Test it!
-        print('|B| at lon={}, lat={} is {:.3f}nT'.format(igeolon, igeolat, tri_int(igeolon, igeolat)))        
-
+        #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
+        #    lon, lat, self[time](lon, lat)))
 
 if __name__ == "__main__":
     '''
