@@ -35,6 +35,26 @@ class MagArray(object):
     '''
     Load a SuperMAG data file and use the included data to explore
     magnetic values at any arbitrary point.
+
+    The object is arranged thusly:
+
+    self.data -- A supermag.SuperMag object that stores the raw data from
+                 which we interpolate in time and space.
+    self.points -- An array of shape [nMag, 2] containing the lons and lats
+                   of each magnetometer in self.data.
+    
+    Example
+    -------
+    # Create a MagArray object from data in repository:
+    >>> import BirdBeaks
+    >>> a = BirdBeaks.MagArray('BirdBeaks/data/supermag_example.txt')
+    
+    # Explore contents of file:
+    >>> print(a.data.keys())
+    >>> print(a.data['BOU']['bx'])
+    >>> print(a.points.shape)
+    >>> print( len(a.data.keys()) )
+
     '''
     
     #Defining the input: longitude, latitude, and string date in the form of 'YYYY/MM/DD/hh/mm'
