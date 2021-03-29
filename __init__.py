@@ -63,14 +63,15 @@ class MagArray(object):
         
         # Open the data file, store in a SuperMag object.
         # If it's a pickle, unpickle it.  Otherwise, open the ASCII object.
-        if filename[-4:] == '.txt': # We have an ASCII file:
-            self.data = supermag.SuperMag(filename, load_info=True)
-            self.data.calc_btotal()
-        elif filename[-4:] == '.pkl': # We have a pickle!
-            raw = open(filename, 'rb')
-            self.data = pickle.load(raw)
-        else:
-            raise ValueError("Unknown file format for {}".format(filename))
+#        if filename[-4:] == '.txt': # We have an ASCII file:
+#            self.data = supermag.SuperMag(filename, load_info=True)
+#            self.data.calc_btotal()
+#        elif filename[-4:] == '.pkl': # We have a pickle!
+#            raw = open(filename, 'rb')
+#            self.data = pickle.load(raw)
+#        else:
+#            raise ValueError("Unknown file format for {}".format(filename))
+        self.data = filename
 
         # Create dictionary to hold interpolator objects:
         self.interp = {}
@@ -78,6 +79,7 @@ class MagArray(object):
         # Store list of stations:
         mags = list(self.data.keys())
         mags.remove('time')
+        nummags = len(mags)
         
         # For each station, save the lon/lat:
         self.points = np.zeros( [len(self.data)-1, 2] )
@@ -103,8 +105,29 @@ class MagArray(object):
         # make it and save it!
         if time not in self.interp:
             self._create_interp(time)
+        
+        product = self.interp[time](lon, lat)
+        
+        mags = list(self.data.keys())
+        mags.remove('time')
+        nummags = len(mags)
 
-        return self.interp[time](lon, lat)
+        #check if nan or number
+        import math
+        checkifnan = math.isnan(product)
+        if checkifnan == True:
+            for a in range(nummags):
+                self._create_reinterp(time, a)
+                product = self.interp[time](lon, lat)
+                checknan = math.isnan(product)
+                if checknan == True:
+                    continue
+                elif checknan == False:
+                    break
+        elif checkifnan == False:
+            pass
+
+        return product
 
     def __str__(self):
         '''
@@ -131,6 +154,62 @@ class MagArray(object):
         # Get list of stations:
         mags = list(self.data.keys())
         mags.remove('time')
+        
+        # For each station, save the lon/lat and |b| for time zero:
+        for i, m in enumerate(mags):
+            b[i]        = self.data[m]['b'][loc]
+            
+        # Create our interpolator object:
+        self.interp[time] = LinearNDInterpolator(self.points, b)
+        
+        # Test it!
+        #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
+        #    lon, lat, self[time](lon, lat)))
+
+    def _create_newinterp(self, time):
+        '''
+        For a given time, set up an interpolation object.
+        '''
+        from scipy.interpolate import NearestNDInterpolator
+
+        # Get position corresponding to current time.
+        loc = self.data['time'] == time
+                
+        # Create empty arrays for lon/lat and b_total:
+        b      = np.zeros( len(self.data)-1 )
+        
+        # Get list of stations:
+        mags = list(self.data.keys())
+        mags.remove('time')
+        
+        # For each station, save the lon/lat and |b| for time zero:
+        for i, m in enumerate(mags):
+            b[i]        = self.data[m]['b'][loc]
+            
+        # Create our interpolator object:
+        self.interp[time] = NearestNDInterpolator(self.points, b)
+        
+        # Test it!
+        #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
+        #    lon, lat, self[time](lon, lat)))
+
+
+    def _create_reinterp(self, time, a):
+        '''
+        For a given time, set up an interpolation object.
+        '''
+        from scipy.interpolate import LinearNDInterpolator
+
+        # Get position corresponding to current time.
+        loc = self.data['time'] == time
+                
+        # Create empty arrays for lon/lat and b_total:
+        b      = np.zeros( len(self.data)-1 )
+        
+        # Get list of stations:
+        mags = list(self.data.keys())
+        mags.remove('time')
+        mags.remove(mags[a])
         
         # For each station, save the lon/lat and |b| for time zero:
         for i, m in enumerate(mags):
