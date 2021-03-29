@@ -108,24 +108,25 @@ class MagArray(object):
         
         product = self.interp[time](lon, lat)
         
-        mags = list(self.data.keys())
-        mags.remove('time')
-        nummags = len(mags)
+        # mags = list(self.data.keys())
+        # mags.remove('time')
+        # nummags = len(mags)
 
         #check if nan or number
-        import math
-        checkifnan = math.isnan(product)
-        if checkifnan == True:
-            for a in range(nummags):
-                self._create_reinterp(time, a)
-                product = self.interp[time](lon, lat)
-                checknan = math.isnan(product)
-                if checknan == True:
-                    continue
-                elif checknan == False:
-                    break
-        elif checkifnan == False:
-            pass
+        #import math
+        if np.isnan(product):
+            raise ValueError('NaN detected in output')
+        #if checkifnan == True:
+        #    for a in range(nummags):
+        #        self._create_reinterp(time, a)
+        #        product = self.interp[time](lon, lat)
+        #        checknan = math.isnan(product)
+        #        if checknan == True:
+        #            continue
+        #        elif checknan == False:
+        #            break
+        #elif checkifnan == False:
+        #    pass
 
         return product
 
@@ -149,7 +150,7 @@ class MagArray(object):
         loc = self.data['time'] == time
                 
         # Create empty arrays for lon/lat and b_total:
-        b      = np.zeros( len(self.data)-1 )
+        b = np.zeros( len(self.data)-1 )
         
         # Get list of stations:
         mags = list(self.data.keys())
@@ -157,10 +158,14 @@ class MagArray(object):
         
         # For each station, save the lon/lat and |b| for time zero:
         for i, m in enumerate(mags):
-            b[i]        = self.data[m]['b'][loc]
-            
+            b[i] = self.data[m]['b'][loc]
+
+        # Create filter to only keep real/finite values, remove nans.
+        filter = np.isfinite(b)
+        
         # Create our interpolator object:
-        self.interp[time] = LinearNDInterpolator(self.points, b)
+        self.interp[time] = LinearNDInterpolator(
+            self.points[filter,:], b[filter])
         
         # Test it!
         #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
