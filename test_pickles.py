@@ -39,6 +39,10 @@ def interp_file(supermagfile, lon, lat, leap=True):
     from scipy.interpolate import NearestNDInterpolator
     
     import BirdBeaks
+
+    # CHANGE ME:
+    name_radar = 'KLNX'
+
     magarray = BirdBeaks.MagArray(supermagfile)
 
     #bird station we are testing
@@ -55,28 +59,29 @@ def interp_file(supermagfile, lon, lat, leap=True):
             birdstation['time'].append(supermagfile['time'][i*60])
     
     #create file
-    f = open('2008_KLNX.txt','w')
-    f.write('2008 KLNX at longitude = {} and latitude = {}\n'.format(lon, lat))
+    f = open(f'2008_{name_radar}.txt','w')
+    f.write('2008 {} at longitude = {} and latitude = {}\n'.format(name_radar, lon, lat))
 
-    #interpolate at each time
+    #interpolate at each time.  Time this process.
+    tStart = dt.now()
     for i in range(len(birdstation['time'])):
         b = magarray(birdstation['time'][i], lon, lat)
         birdstation['b'].append(b)
         
-        #masked array
-        birdmask = np.ma.masked_invalid(birdstation['b'])
-        maskedcount = len(birdmask) - birdmask.count()
+        # #masked array
+        # birdmask = np.ma.masked_invalid(birdstation['b'])
+        # maskedcount = len(birdmask) - birdmask.count()
         
-        #let us know, how many data values are masked
-        print('birdmask has ', maskedcount, 'masked values')
+        # #let us know, how many data values are masked
+        # #print('birdmask has ', maskedcount, 'masked values')
         
-        #get the masked array
-        masks = np.ma.getmaskarray(birdmask)
-        for i in range(len(masks)):
-            if masks[i]==True: #isolate the masked values and re-interpolate
-                pass
-            else: #if unmasked, just skip (:
-                pass
+        # #get the masked array
+        # masks = np.ma.getmaskarray(birdmask)
+        # for i in range(len(masks)):
+        #     if masks[i]==True: #isolate the masked values and re-interpolate
+        #         pass
+        #     else: #if unmasked, just skip (:
+        #         pass
         
         #print each interpolation
         #print('On {}, |B| at lon={}, lat={} is {:.3f} nT'.format(birdstation['time'][i], lon, lat, birdstation['b'][i]))
@@ -84,11 +89,12 @@ def interp_file(supermagfile, lon, lat, leap=True):
         f.write('{} \t{} \n'.format(birdstation['time'][i], birdstation['b'][i]))
     f.close()
 
-    #done message
-    donesies = 'ooga booga'
-    print(donesies)
-    
+    # Calculate timing:
+    nMins = (dt.datetime.now() - tStart).total_seconds()/60.
 
+    #done message
+    print(f'Finished with radar station {name_radar}')
+    print(f'Process took {nMins}')
     
     return supermagfile, birdstation
     
