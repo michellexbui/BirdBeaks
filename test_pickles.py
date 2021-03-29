@@ -90,7 +90,7 @@ def interp_file(supermagfile, lon, lat, leap=True):
     f.close()
 
     # Calculate timing:
-    nMins = (dt.datetime.now() - tStart).total_seconds()/60.
+    nMins = (dt.now() - tStart).total_seconds()/60.
 
     #done message
     print(f'Finished with radar station {name_radar}')
