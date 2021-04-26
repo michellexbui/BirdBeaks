@@ -16,10 +16,14 @@ import numpy as np
 from scipy.io import netcdf_file
 
 # These are the stations we want:
-desired_stats=['M01','M02','M05','M06','M07','M08','M09','M10','M11','GLN',
-               'BOU','DLR','TUL','CDP','BSL','TUC','BRD','TEO','BSL','PIN',
-               'C08','C11','C12','T18','T21','T24','T56','T57','M04']
-
+#desired_stats=['M01','M02','M05','M06','M07','M08','M09','M10','M11','GLN',
+#               'BOU','DLR','TUL','CDP','BSL','TUC','BRD','TEO','BSL','PIN',
+#               'C08','C11','C12','T18','T21','T24','T56','T57','M04']
+desired_stats = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09',
+                 'M10', 'M11', 'GLN', 'BOU', 'DLR', 'TUL', 'CDP', 'BSL', 'TUC',
+                 'BRD', 'TEO', 'BSL', 'PIN', 'C08', 'C11', 'C12', 'T18', 'T21', 
+                 'T24', 'T56', 'T57', 'SJG', 'NEW', 'VIC', 'C10', 'DSO', 'T15', 
+                 'OTT', 'CLK', 'PBQ', 'CRP', 'RAL', 'FRD', 'MSH', 'T17']
 # Open file:
 f = netcdf_file('/home/dwelling/all_stations_all2008.netcdf')
 
