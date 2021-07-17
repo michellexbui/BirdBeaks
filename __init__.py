@@ -105,7 +105,8 @@ class MagArray(object):
         self.data = filename
 
         # Create dictionary to hold interpolator objects:
-        self.interp = {}
+        self.interp_b = {}
+        self.interp_max = {}
 
         # Store list of stations:
         mags = list(self.data.keys())
@@ -116,6 +117,14 @@ class MagArray(object):
         self.points = np.zeros( [len(self.data)-1, 2] )
         for i, m in enumerate(mags):
             self.points[i,:] = (self.data[m]['geolon'], self.data[m]['geolat'])
+
+        # Gather all values together to examine dB distributions:
+        self.allB, self.allBmax = np.zeros(0), np.zeros(0)
+        for m in mags:
+            loc = np.isfinite(self.data[m]['b'])
+            self.allB = np.append(self.allB, self.data[m]['b'][loc])
+            loc = np.isfinite(self.data[m]['bmax'])
+            self.allBmax = np.append(self.allBmax, self.data[m]['bmax'][loc])
 
     def __call__(self, time, lon, lat, strict=False):
         '''
@@ -130,24 +139,18 @@ class MagArray(object):
             print(f"Data time ranges from {self.data['time'][0]} to {self.data['time'][0]}")
             raise ValueError('Time outside of data bounds!')
 
-        # POTENTIAL THING HERE: REDUCE DATETIME TO MINUTE RESOLUTION?
-
         # Find interpolator that matches this time.  If it doesn't exist,
         # make it and save it!
-        if time not in self.interp:
+        if time not in self.interp_b:
             self._create_interp(time)
 
-        product = self.interp[time](lon, lat)
-
-        # mags = list(self.data.keys())
-        # mags.remove('time')
-        # nummags = len(mags)
+        b,bmax = self.interp_b[time](lon, lat), self.interp_max[time](lon,lat)
 
         #check if nan or number
-        if strict and np.isnan(product):
+        if strict and (np.isnan(b) or np.isnan(bmax)):
             raise ValueError('NaN detected in output')
 
-        return product
+        return b, bmax
 
     def __str__(self):
         '''
@@ -170,6 +173,7 @@ class MagArray(object):
 
         # Create empty arrays for lon/lat and b_total:
         b = np.zeros( len(self.data)-1 )
+        bmax = np.zeros( len(self.data)-1 )
 
         # Get list of stations:
         mags = list(self.data.keys())
@@ -179,75 +183,57 @@ class MagArray(object):
         # For each station, save the lon/lat and |b| for time zero:
         for i, m in enumerate(mags):
             b[i] = self.data[m]['b'][loc]
+            bmax[i] = self.data[m]['bmax'][loc]
 
         # Create filter to only keep real/finite values, remove nans.
         filter = np.isfinite(b)
         self.interp_mags = mags[filter]
 
         # Create our interpolator object:
-        self.interp[time] = LinearNDInterpolator(
+        self.interp_b[time] = LinearNDInterpolator(
             self.points[filter,:], b[filter])
 
-        # Test it!
-        #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
-        #    lon, lat, self[time](lon, lat)))
-
-    def _create_newinterp(self, time):
-        '''
-        For a given time, set up an interpolation object.
-        '''
-        from scipy.interpolate import NearestNDInterpolator
-
-        # Get position corresponding to current time.
-        loc = self.data['time'] == time
-
-        # Create empty arrays for lon/lat and b_total:
-        b      = np.zeros( len(self.data)-1 )
-
-        # Get list of stations:
-        mags = list(self.data.keys())
-        mags.remove('time')
-
-        # For each station, save the lon/lat and |b| for time zero:
-        for i, m in enumerate(mags):
-            b[i]        = self.data[m]['b'][loc]
-
-        # Create our interpolator object:
-        self.interp[time] = NearestNDInterpolator(self.points, b)
+        self.interp_max[time] = LinearNDInterpolator(
+            self.points[filter,:], bmax[filter])
 
         # Test it!
         #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
         #    lon, lat, self[time](lon, lat)))
 
-
-    def _create_reinterp(self, time, a):
+    def plot_distrib(self, range=[0,1000], width=25, comp1=None, comp2=None,
+                     clab='Compared Dataset',
+                     title='Distribution of Ground Perturbations'):
         '''
-        For a given time, set up an interpolation object.
-        NOT USED.
+        Create a plot of the distribution of all ground magnetic values
+        over the interval contained within the object.
+        If "comp1/2" is a numpy array of values, that distribution will be
+        overplotted for comparison.  Label that data set with *clab*.
+
+
         '''
-        from scipy.interpolate import LinearNDInterpolator
+        import matplotlib.pyplot as plt
 
-        # Get position corresponding to current time.
-        loc = self.data['time'] == time
+        fig = plt.figure(figsize=[10,6])
+        fig.suptitle(title, size=16)
+        a1, a2 = fig.subplots(1,2)
 
-        # Create empty arrays for lon/lat and b_total:
-        b      = np.zeros( len(self.data)-1 )
+        nbins = int(np.ceil((range[1]-range[0])/width))
 
-        # Get list of stations:
-        mags = list(self.data.keys())
-        mags.remove('time')
-        mags.remove(mags[a])
+        kwargs = {'density':True, 'bins':nbins, 'range':range, 'log':True}
+        a1.hist(self.allB, label='All Obs.', **kwargs)
+        a2.hist(self.allBmax, label='All Obs.', **kwargs)
 
-        # For each station, save the lon/lat and |b| for time zero:
-        for i, m in enumerate(mags):
-            b[i]        = self.data[m]['b'][loc]
+        axtitles = ('Instantaneous $|\\Delta B|$', 'Hourly Max $|\\Delta B|$')
+        for ax, t, comp in zip((a1, a2), axtitles, (comp1, comp2)):
+            ax.set_xlabel('$|\\Delta B|$ ($nT$)', size=12)
+            ax.set_title(t, size=14)
+            if comp is not None:
+                ax.hist(comp, label=clab, alpha=.75, **kwargs)
+                ax.legend(loc='best')
 
-        # Create our interpolator object:
-        self.interp[time] = LinearNDInterpolator(self.points, b)
+        a1.set_ylabel('Probability Density', size=12)
 
-        # Test it!
-        #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
-        #    lon, lat, self[time](lon, lat)))
+        return fig, a1, a2
 
 def plot_station_map(show_names=True, mag_list=std_mags):
     '''
