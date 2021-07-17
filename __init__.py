@@ -101,16 +101,7 @@ class MagArray(object):
     def __init__(self, filename): #igeolon, igeolat, istrdt):
         import pickle
 
-        # Open the data file, store in a SuperMag object.
-        # If it's a pickle, unpickle it.  Otherwise, open the ASCII object.
-#        if filename[-4:] == '.txt': # We have an ASCII file:
-#            self.data = supermag.SuperMag(filename, load_info=True)
-#            self.data.calc_btotal()
-#        elif filename[-4:] == '.pkl': # We have a pickle!
-#            raw = open(filename, 'rb')
-#            self.data = pickle.load(raw)
-#        else:
-#            raise ValueError("Unknown file format for {}".format(filename))
+        # Right now, only opens pre-constructed pickles.
         self.data = filename
 
         # Create dictionary to hold interpolator objects:

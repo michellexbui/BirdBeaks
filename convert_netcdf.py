@@ -24,9 +24,11 @@ from BirdBeaks import std_mags as desired_stats
 # Start by setting up args.
 parser = ArgumentParser(description=__doc__,
                         formatter_class=RawDescriptionHelpFormatter)
-
 parser.add_argument("mags", type=str, metavar='supermag_file',
                     help="Path of SuperMag observations NetCDF file.")
+parser.add_argument("-ws", "--windowsize", type=int, default=61,
+                    help="Set size of window for rolling maximum |B|." + \
+                        "  Must be an odd number.")
 args = parser.parse_args()
 
 # Get all station info:
@@ -37,6 +39,7 @@ f = netcdf_file(args.mags)
 
 # Get some basic info: size, etc.
 nTime = f.variables['time_sc'].data.shape[0]
+width = int(np.floor(args.windowsize/2))
 
 # Build map between station names and array location.
 stat_names = {}
@@ -74,8 +77,20 @@ for s in stats:
     data[s] = {'bx':f.variables['dbn_nez'].data[:,stat_names[s]],
                'by':f.variables['dbe_nez'].data[:,stat_names[s]],
                'bz':f.variables['dbz_nez'].data[:,stat_names[s]]}
+
     # Calculate magnitude of the field perturbation:
     data[s]['b'] = np.sqrt(data[s]['bx']**2+data[s]['by']**2+data[s]['bz']**2)
+
+    # Calculate rolling maximum of b:
+    nPoints = data[s]['b'].size
+    data[s]['bmax'] = np.zeros(nPoints)
+    for i in range(nPoints):
+        istart, istop = max(0,i-width), min(i+width,nPoints)
+        vals = data[s]['b'][istart:istop]
+        if vals[np.isfinite(vals)].size:
+            data[s]['bmax'][i] = vals[np.isfinite(vals)].max()
+        else:
+            data[s]['bmax'][i]=np.nan
 
     # Add information:
     if s in info:
