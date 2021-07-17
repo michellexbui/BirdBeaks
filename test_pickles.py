@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-A package for interpolating magnetometer data to explore the effects of field changes on 
+A package for interpolating magnetometer data to explore the effects of field changes on
 migrating bird behavior and adaptations.
 '''
 
@@ -16,10 +16,10 @@ def make_Dict(file_name):
     '''
     Make supermagfile, which takes the pickle Dr. Welling created and appends station information
     '''
-    
+
     #load the pickle information
     supermagfile = pickle.load(open(file_name,'rb'))
-    
+
     #load station info
     info = supermag.read_statinfo()
     for s in supermagfile:
@@ -27,17 +27,17 @@ def make_Dict(file_name):
             supermagfile[s]['geolon'] = info[s]['geolon']
             supermagfile[s]['geolat'] = info[s]['geolat']
             supermagfile[s]['name']   = info[s]['station-name']
-    
+
     return supermagfile
 
 def interp_file(supermagfile, lon, lat, leap=True):
     '''
-    Load a ascii-formatted SuperMag file and convert it to a 
+    Load a ascii-formatted SuperMag file and convert it to a
     Python pickle for fast loading later.
     '''
-    
+
     from scipy.interpolate import NearestNDInterpolator
-    
+
     import BirdBeaks
 
     # CHANGE ME:
@@ -49,7 +49,7 @@ def interp_file(supermagfile, lon, lat, leap=True):
     birdstation = {}
     birdstation['time'] = []
     birdstation['b'] = []
-    
+
     #account for leap year?
     if leap == True:
         for i in range(8784):
@@ -57,7 +57,7 @@ def interp_file(supermagfile, lon, lat, leap=True):
     if leap == False:
         for i in range(8760):
             birdstation['time'].append(supermagfile['time'][i*60])
-    
+
     #create file
     f = open(f'2008_{name_radar}.txt','w')
     f.write('2008 {} at longitude = {} and latitude = {}\n'.format(name_radar, lon, lat))
@@ -67,14 +67,14 @@ def interp_file(supermagfile, lon, lat, leap=True):
     for i in range(len(birdstation['time'])):
         b = magarray(birdstation['time'][i], lon, lat)
         birdstation['b'].append(b)
-        
+
         # #masked array
         # birdmask = np.ma.masked_invalid(birdstation['b'])
         # maskedcount = len(birdmask) - birdmask.count()
-        
+
         # #let us know, how many data values are masked
         # #print('birdmask has ', maskedcount, 'masked values')
-        
+
         # #get the masked array
         # masks = np.ma.getmaskarray(birdmask)
         # for i in range(len(masks)):
@@ -82,7 +82,7 @@ def interp_file(supermagfile, lon, lat, leap=True):
         #         pass
         #     else: #if unmasked, just skip (:
         #         pass
-        
+
         #print each interpolation
         #print('On {}, |B| at lon={}, lat={} is {:.3f} nT'.format(birdstation['time'][i], lon, lat, birdstation['b'][i]))
         #write into the file
@@ -95,9 +95,9 @@ def interp_file(supermagfile, lon, lat, leap=True):
     #done message
     print(f'Finished with radar station {name_radar}')
     print(f'Process took {nMins}')
-    
+
     return supermagfile, birdstation
-    
+
 def plot_b(supermagfile, birdstation):
     '''
     Plot each magnetometer station + the interpolated file, already done.

@@ -1,31 +1,39 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 This script extracts information from a SuperMag NetCDF file and converts it
 to a useable pickle.  It's a very rough draft of a script that should be
 updated and adapted as we move forward.
 
-Critical things to change: 
+Usage example: convert_netcdf.py all_stations_all1970.netcdf
+
+Critical things to change:
     - List of desired stations from static to any within lat/lon range
     - Input/output files as arguments
 '''
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from pickle import dump
 from datetime import datetime as dt
 
 import numpy as np
 from scipy.io import netcdf_file
 
-# These are the stations we want:
-#desired_stats=['M01','M02','M05','M06','M07','M08','M09','M10','M11','GLN',
-#               'BOU','DLR','TUL','CDP','BSL','TUC','BRD','TEO','BSL','PIN',
-#               'C08','C11','C12','T18','T21','T24','T56','T57','M04']
-desired_stats = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09',
-                 'M10', 'M11', 'GLN', 'BOU', 'DLR', 'TUL', 'CDP', 'BSL', 'TUC',
-                 'BRD', 'TEO', 'BSL', 'PIN', 'C08', 'C11', 'C12', 'T18', 'T21', 
-                 'T24', 'T56', 'T57', 'SJG', 'NEW', 'VIC', 'C10', 'DSO', 'T15', 
-                 'OTT', 'CLK', 'PBQ', 'CRP', 'RAL', 'FRD', 'MSH', 'T17']
+import supermag
+from BirdBeaks import std_mags as desired_stats
+
+# Start by setting up args.
+parser = ArgumentParser(description=__doc__,
+                        formatter_class=RawDescriptionHelpFormatter)
+
+parser.add_argument("mags", type=str, metavar='supermag_file',
+                    help="Path of SuperMag observations NetCDF file.")
+args = parser.parse_args()
+
+# Get all station info:
+info = supermag.read_statinfo()
+
 # Open file:
-f = netcdf_file('/home/dwelling/all_stations_all2008.netcdf')
+f = netcdf_file(args.mags)
 
 # Get some basic info: size, etc.
 nTime = f.variables['time_sc'].data.shape[0]
@@ -41,6 +49,11 @@ for i in range(nStats):
 stats = []
 for s in desired_stats:
     if s in stat_names: stats.append(s)
+
+# Print out some info:
+print(f"Input file information:")
+print(f"\tNumber of mags: {nStats}")
+print(f"\tNumber of desired mags: {len(stats)}/{len(desired_stats)}")
 
 # Create basic data container:
 data = {}
@@ -64,8 +77,21 @@ for s in stats:
     # Calculate magnitude of the field perturbation:
     data[s]['b'] = np.sqrt(data[s]['bx']**2+data[s]['by']**2+data[s]['bz']**2)
 
-f.close()
+    # Add information:
+    if s in info:
+        data[s]['geolon'] = info[s]['geolon']
+        data[s]['geolat'] = info[s]['geolat']
+        data[s]['name']   = info[s]['station-name']
+    else:
+        data[s]['geolon'] = -1
+        data[s]['geolat'] = -1
+        data[s]['name']   = '   '
 
+# Create an output file name:
+outfile = f'magdata_{data["time"][0]:%Y}.pkl'
 # Save results as a pickle:
-with open('test_mags.pkl', 'wb') as out:
+with open(outfile, 'wb') as out:
     dump(data, out)
+
+# Close the stupid netcdf file
+#f.close()
