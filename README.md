@@ -1,19 +1,24 @@
 # BirdBeaks
 
 A package for interpolating magnetic field data across CONUS to explore
-potential effects of magnetic field fluctuations on migrating birds. 
+potential effects of magnetic field fluctuations on migrating birds.
 
-Magnetic field data was accessed through SuperMag (http://supermag.jhuapl.edu), a global database of ground-based magnetometer data hosted by JHU Applied Physics Laboratory. The region of data selected for the example data file includes the entire continental United States as well as Canada, Mexico, and the Carribean region for the most accurate interpolation. There are about 90 total magnetometers in the region, but data availability varies per year. Data availability ranges from 1975 to the previous year, and data files can be accessed through SuperMag in yearly increments. 
+Magnetic field data was accessed through SuperMag (http://supermag.jhuapl.edu), a global database of ground-based magnetometer data hosted by JHU Applied Physics Laboratory. The region of data selected for the example data file includes the entire continental United States as well as Canada, Mexico, and the Carribean region for the most accurate interpolation. There are about 90 total magnetometers in the region, but data availability varies per year. Data availability ranges from 1975 to the previous year, and data files can be accessed through SuperMag in yearly increments.
 
 # Bird Migrational Patterns and Their Relation to Magnetic Field Fluctuations
 
-Birds are commonly known to have an internal magnetic compass to direct their  migrations. 
+Birds are commonly known to have an internal magnetic compass to direct their  migrations.
 Currently, studies seek to observe exactly which aspects of avian anatomy contribute to a bird’s magnetic compass.
 
-The cranial anatomy of a bird contains several elements of magnetoreception. A study in 2010 showed a high frequency of an iron mineral containing sensory dendrites in the dermal lining of many bird beaks [1]. 
+The cranial anatomy of a bird contains several elements of magnetoreception. A study in 2010 showed a high frequency of an iron mineral containing sensory dendrites in the dermal lining of many bird beaks [1].
 
-The iron mineral has been hypothesized as a potential sensory basis for magnetically dependent behavior. Since this is in the lining of many bird beaks, the growth of bird beaks can be attributed to greater surface area of the iron mineral. Variances in surface area of iron could increase sensitivity to fluctuations in magnetic field. Another aspect involving magnetodetection is the ophthalmic branch of the trigeminal nerve, which is commonly located in the upper beak of birds. This feature has been recorded for sensitivities to magnetic field changes of at most 200 nT [2]. 
+The iron mineral has been hypothesized as a potential sensory basis for magnetically dependent behavior. Since this is in the lining of many bird beaks, the growth of bird beaks can be attributed to greater surface area of the iron mineral. Variances in surface area of iron could increase sensitivity to fluctuations in magnetic field. Another aspect involving magnetodetection is the ophthalmic branch of the trigeminal nerve, which is commonly located in the upper beak of birds. This feature has been recorded for sensitivities to magnetic field changes of at most 200 nT [2].
 
+# Software and Processing
+
+- `__init__.py` establishes a package for handling and processing Supermag data files, including interpolation.
+- `convert_netcdf.py` takes a Supermag NetCDF file of 1 year of data and converts it into a python pickle of data that contains field magnitude and rolling hourly max values.
+- `generate_db.py` takes a pickle from `convert_netcdf.py` and interpolates to radar station locations. Both python pickles and ascii files are generated.
 
 ## Large Files
 

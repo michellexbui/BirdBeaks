@@ -14,15 +14,6 @@ This script generalizes work performed by Michelle Bui, 2020.
 
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
-# Start by setting up args.
-parser = ArgumentParser(description=__doc__,
-                        formatter_class=RawDescriptionHelpFormatter)
-
-parser.add_argument("mags", type=str,
-                    help="Path of SuperMag observations python pickle.")
-args = parser.parse_args()
-
-# Continue imports now that args are handled:
 import os
 import pickle
 import datetime as dt
@@ -30,8 +21,15 @@ import datetime as dt
 import numpy as np
 import matplotlib.pyplot as plt
 
-import supermag
 import BirdBeaks
+
+# Start by setting up args.
+parser = ArgumentParser(description=__doc__,
+                        formatter_class=RawDescriptionHelpFormatter)
+
+parser.add_argument("mags", type=str,
+                    help="Path of SuperMag observations python pickle.")
+args = parser.parse_args()
 
 # Load observed mag data, convert to BirdBeak object:
 with open(args.mags, 'rb') as f:
@@ -59,7 +57,7 @@ for r in radars:
     interpm[r] = np.zeros(n_hour)
 
 # Loop over all times, interpolating data to each station and saving results:
-for i,t in enumerate(time):
+for i, t in enumerate(time):
     for r in radars:
         interpd[r][i], interpm[r][i] = obs(t, radars[r][1], radars[r][0])
 
@@ -69,10 +67,10 @@ with open(outdir+f"all_radars_{year}.pkl", 'wb') as out:
 
 for r in radars:
     with open(outdir+f"{r}_{year:04d}.txt", 'w') as out:
-       out.write(f"Station {r} at geolat={radars[r][0]}, geolon={radars[r][1]}\n")
-       out.write("Time\tInst. B\tHourly Max B\n")
-       for i, t in enumerate(time):
-           out.write(f"{t}\t{interpd[r][i]:012.7f}\t{interpm[r][i]:012.7f}\n")
+        out.write(f"Station {r} at geolat={radars[r][0]}, geolon={radars[r][1]}\n")
+        out.write("Time\tInst. B\tHourly Max B\n")
+        for i, t in enumerate(time):
+            out.write(f"{t}\t{interpd[r][i]:012.7f}\t{interpm[r][i]:012.7f}\n")
 
 # Create plots to examine dB distribution:
 for r in radars:

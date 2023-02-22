@@ -5,6 +5,14 @@ This script extracts information from a SuperMag NetCDF file and converts it
 to a useable pickle.  It's a very rough draft of a script that should be
 updated and adapted as we move forward.
 
+Beyond saving the three-component field for each desired station and the
+corresponding time, the magnitude of $\Delta B$ is calculated. Further, a
+rolling maximum of the field magnitude is generated using a window of size
+`windowsize` (see argument list below) centered about each epoch. For example,
+if the default window size of 61 is used, and the data is minute-sampled,
+the rolling max for some time, t, will be the maximum value from
+t-30mins to t+30mins.
+
 Usage example: convert_netcdf.py all_stations_all1970.netcdf
 
 Critical things to change:

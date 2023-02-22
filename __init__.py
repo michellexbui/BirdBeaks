@@ -89,7 +89,10 @@ class MagArray(object):
     -------
     # Create a MagArray object from data in repository:
     >>> import BirdBeaks
-    >>> a = BirdBeaks.MagArray('BirdBeaks/data/supermag_example.txt')
+    >>> import pickle
+    >>> with open('./data/mag_pickles/magdata_1995.pkl', 'rb') as f:
+    >>>     data = pickle.load(f)
+    >>> a = BirdBeaks.MagArray(data)
 
     # Explore contents of file:
     >>> print(a.data.keys())
