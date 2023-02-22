@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 '''
-A package for interpolating magnetometer data to explore the effects of field changes on
-migrating bird behavior and adaptations.
+A package for interpolating magnetometer data to explore the effects of field
+changes on migrating bird behavior and adaptations.
 '''
 
 # Import everything first!
 import os
 import supermag
 import numpy as np
-from datetime import datetime as dt
 
 # Set install directory:
 install_dir = '/'.join(__loader__.path.split('/')[:-1])+'/'
@@ -19,6 +18,7 @@ std_mags = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09',
             'BRD', 'TEO', 'BSL', 'PIN', 'C08', 'C11', 'C12', 'T18', 'T21',
             'T24', 'T56', 'T57', 'SJG', 'NEW', 'VIC', 'C10', 'DSO', 'T15',
             'OTT', 'CLK', 'PBQ', 'CRP', 'RAL', 'FRD', 'MSH', 'T17']
+
 
 def load_radar_info():
     '''
@@ -44,10 +44,12 @@ def load_radar_info():
 
         for l in f.readlines():
             parts = l.split(',')
-            station = parts[0].replace('"','')
+            station = parts[0].replace('"', '')
             info[station] = [float(parts[1]), float(parts[2])]
-            if info[station][1]<=0: info[station][1]+=360.0
+            if info[station][1] <= 0:
+                info[station][1] += 360.0
     return info
+
 
 def ascii_to_pickle(supermag_file):
     '''
@@ -70,7 +72,7 @@ def ascii_to_pickle(supermag_file):
 
     return True
 
-#Method which takes in geographic longitude, geographic latitude, and a string date & yields |B|
+
 class MagArray(object):
     '''
     Load a SuperMAG data file and use the included data to explore
@@ -97,10 +99,7 @@ class MagArray(object):
 
     '''
 
-    #Defining the input: longitude, latitude, and string date in the form of 'YYYY/MM/DD/hh/mm'
-    def __init__(self, filename): #igeolon, igeolat, istrdt):
-        import pickle
-
+    def __init__(self, filename):
         # Right now, only opens pre-constructed pickles.
         self.data = filename
 
@@ -111,12 +110,13 @@ class MagArray(object):
         # Store list of stations:
         mags = list(self.data.keys())
         mags.remove('time')
-        nummags = len(mags)
+        # nummags = len(mags)
 
         # For each station, save the lon/lat:
-        self.points = np.zeros( [len(self.data)-1, 2] )
+        self.points = np.zeros([len(self.data)-1, 2])
         for i, m in enumerate(mags):
-            self.points[i,:] = (self.data[m]['geolon'], self.data[m]['geolat'])
+            self.points[i, :] = (self.data[m]['geolon'],
+                                 self.data[m]['geolat'])
 
         # Gather all values together to examine dB distributions:
         self.allB, self.allBmax = np.zeros(0), np.zeros(0)
@@ -134,7 +134,7 @@ class MagArray(object):
 
         # Check to make sure time does not exceed boundaries of
         # loaded magnetometer data:
-        if time > self.data['time'][-1] or time<self.data['time'][0]:
+        if time > self.data['time'][-1] or time < self.data['time'][0]:
             print(f'Time requested = {time}')
             print(f"Data time ranges from {self.data['time'][0]} to {self.data['time'][0]}")
             raise ValueError('Time outside of data bounds!')
@@ -144,9 +144,10 @@ class MagArray(object):
         if time not in self.interp_b:
             self._create_interp(time)
 
-        b,bmax = self.interp_b[time](lon, lat), self.interp_max[time](lon,lat)
+        b = self.interp_b[time](lon, lat)
+        bmax = self.interp_max[time](lon, lat)
 
-        #check if nan or number
+        # check if nan or number
         if strict and (np.isnan(b) or np.isnan(bmax)):
             raise ValueError('NaN detected in output')
 
@@ -158,9 +159,8 @@ class MagArray(object):
         '''
         return 'MagArray spanning T={},{}; lons={},{}; lats={},{}'.format(
             self.data['time'][0], self.data['time'][-1],
-            self.points[:,0].min(), self.points[:,0].max(),
-            self.points[:,1].min(), self.points[:,1].max())
-
+            self.points[:, 0].min(), self.points[:, 0].max(),
+            self.points[:, 1].min(), self.points[:, 1].max())
 
     def _create_interp(self, time):
         '''
@@ -172,8 +172,8 @@ class MagArray(object):
         loc = self.data['time'] == time
 
         # Create empty arrays for lon/lat and b_total:
-        b = np.zeros( len(self.data)-1 )
-        bmax = np.zeros( len(self.data)-1 )
+        b = np.zeros(len(self.data) - 1)
+        bmax = np.zeros(len(self.data) - 1)
 
         # Get list of stations:
         mags = list(self.data.keys())
@@ -191,16 +191,16 @@ class MagArray(object):
 
         # Create our interpolator object:
         self.interp_b[time] = LinearNDInterpolator(
-            self.points[filter,:], b[filter])
+            self.points[filter, :], b[filter])
 
         self.interp_max[time] = LinearNDInterpolator(
-            self.points[filter,:], bmax[filter])
+            self.points[filter, :], bmax[filter])
 
         # Test it!
-        #print('|B| at lon={}, lat={} is {:.3f}nT'.format(
+        # print('|B| at lon={}, lat={} is {:.3f}nT'.format(
         #    lon, lat, self[time](lon, lat)))
 
-    def plot_distrib(self, range=[0,1000], width=25, comp1=None, comp2=None,
+    def plot_distrib(self, range=[0, 1000], width=25, comp1=None, comp2=None,
                      clab='Compared Dataset',
                      title='Distribution of Ground Perturbations'):
         '''
@@ -213,13 +213,13 @@ class MagArray(object):
         '''
         import matplotlib.pyplot as plt
 
-        fig = plt.figure(figsize=[10,6])
+        fig = plt.figure(figsize=[10, 6])
         fig.suptitle(title, size=16)
-        a1, a2 = fig.subplots(1,2)
+        a1, a2 = fig.subplots(1, 2)
 
         nbins = int(np.ceil((range[1]-range[0])/width))
 
-        kwargs = {'density':True, 'bins':nbins, 'range':range, 'log':True}
+        kwargs = {'density': True, 'bins': nbins, 'range': range, 'log': True}
         a1.hist(self.allB, label='All Obs.', **kwargs)
         a2.hist(self.allBmax, label='All Obs.', **kwargs)
 
@@ -234,6 +234,7 @@ class MagArray(object):
         a1.set_ylabel('Probability Density', size=12)
 
         return fig, a1, a2
+
 
 def plot_station_map(show_names=True, mag_list=std_mags):
     '''
@@ -251,11 +252,11 @@ def plot_station_map(show_names=True, mag_list=std_mags):
     mag_info = supermag.read_statinfo()
 
     # Set up plot of North America:
-    #proj = crs.AlbersEqualArea(central_longitude=275,
+    # proj = crs.AlbersEqualArea(central_longitude=275,
     #                           standard_parallels=(25.0, 45.0))
     proj = crs.PlateCarree()
 
-    fig = plt.figure(figsize=(10,8.13))
+    fig = plt.figure(figsize=(10, 8.13))
     ax = fig.add_subplot(111, projection=proj)
 
     # Add map to figure:
@@ -265,10 +266,11 @@ def plot_station_map(show_names=True, mag_list=std_mags):
 
     # Add radar stations to figure:
     for r in radars:
-        lat,lon=radars[r]
+        lat, lon = radars[r]
         ax.plot(lon, lat, 'ko', mfc='red', transform=proj)
         if show_names:
-            ax.text(lon+.5, lat, r, ha='left', va='top', transform=proj, size=8)
+            ax.text(lon+.5, lat, r, ha='left', va='top',
+                    transform=proj, size=8)
     # Add magnetometers:
     for m in std_mags:
         if m in mag_list:
@@ -278,19 +280,21 @@ def plot_station_map(show_names=True, mag_list=std_mags):
         lon, lat = mag_info[m]['geolon'], mag_info[m]['geolat']
         ax.plot(lon, lat, 'k^', mfc=mfc, transform=proj)
         if show_names:
-            ax.text(lon-.5, lat, m, ha='right', va='top', transform=proj, size=8)
+            ax.text(lon-.5, lat, m, ha='right', va='top',
+                    transform=proj, size=8)
 
     # Customize axes:
     ax.set_extent([-125, -63, 9, 60])
-    l1 = ax.plot(0,0, 'ko', mfc='red', transform=proj)
-    l2 = ax.plot(0,0, 'k^', mfc='blue')
-    l3 = ax.plot(0,0, 'k^', mfc='grey')
+    l1 = ax.plot(0, 0, 'ko', mfc='red', transform=proj)
+    l2 = ax.plot(0, 0, 'k^', mfc='blue')
+    l3 = ax.plot(0, 0, 'k^', mfc='grey')
     ax.legend(l1+l2+l3, ['Radars', 'Magnetometers', 'Mags: No Data'],
               loc='upper left')
     fig.tight_layout()
     fig.tight_layout()
 
     return fig
+
 
 if __name__ == "__main__":
     '''
