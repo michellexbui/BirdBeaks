@@ -15,7 +15,7 @@ install_dir = '/'.join(__loader__.path.split('/')[:-1])+'/'
 # Standard magnetometer set for NA interpolation:
 std_mags = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09',
             'M10', 'M11', 'GLN', 'BOU', 'DLR', 'TUL', 'CDP', 'BSL', 'TUC',
-            'BRD', 'TEO', 'BSL', 'PIN', 'C08', 'C11', 'C12', 'T18', 'T21',
+            'BRD', 'TEO', 'PIN', 'C08', 'C11', 'C12', 'T18', 'T21',
             'T24', 'T56', 'T57', 'SJG', 'NEW', 'VIC', 'C10', 'DSO', 'T15',
             'OTT', 'CLK', 'PBQ', 'CRP', 'RAL', 'FRD', 'MSH', 'T17']
 
