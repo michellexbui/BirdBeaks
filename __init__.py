@@ -18,6 +18,8 @@ std_mags = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09',
             'BRD', 'TEO', 'PIN', 'C08', 'C11', 'C12', 'T18', 'T21',
             'T24', 'T56', 'T57', 'SJG', 'NEW', 'VIC', 'C10', 'DSO', 'T15',
             'OTT', 'CLK', 'PBQ', 'CRP', 'RAL', 'FRD', 'MSH', 'T17']
+good_mags = ['FRD', 'RAL', 'OTT', 'VIC', 'NEW', 'SJG', 'PIN', 'TUC', 'BSL',
+             'BOU']
 
 
 def load_radar_info():
@@ -276,12 +278,16 @@ def plot_station_map(show_names=True, mag_list=std_mags):
                     transform=proj, size=8)
     # Add magnetometers:
     for m in std_mags:
-        if m in mag_list:
+        ms = 6.0
+        if m in good_mags:
+            mfc = 'green'
+            ms = 8.0
+        elif m in mag_list:
             mfc = 'blue'
         else:
             mfc = 'grey'
         lon, lat = mag_info[m]['geolon'], mag_info[m]['geolat']
-        ax.plot(lon, lat, 'k^', mfc=mfc, transform=proj)
+        ax.plot(lon, lat, 'k^', mfc=mfc, ms=ms, transform=proj)
         if show_names:
             ax.text(lon-.5, lat, m, ha='right', va='top',
                     transform=proj, size=8)
@@ -290,8 +296,10 @@ def plot_station_map(show_names=True, mag_list=std_mags):
     ax.set_extent([-125, -63, 9, 60])
     l1 = ax.plot(0, 0, 'ko', mfc='red', transform=proj)
     l2 = ax.plot(0, 0, 'k^', mfc='blue')
-    l3 = ax.plot(0, 0, 'k^', mfc='grey')
-    ax.legend(l1+l2+l3, ['Radars', 'Magnetometers', 'Mags: No Data'],
+    l3 = ax.plot(0, 0, 'k^', mfc='green')
+    l4 = ax.plot(0, 0, 'k^', mfc='grey')
+    ax.legend(l1+l2+l3+l4, ['Radars', 'Magnetometers',
+                            'Mags: >75% Coverage', 'Mags: No Data'],
               loc='upper left')
     fig.tight_layout()
     fig.tight_layout()

@@ -73,10 +73,41 @@ def load_gooddata():
     return time, mags
 
 
-def summarize_mags():
+def report_good_mags(time=None, mags=None, percent=75.0, verbose=True):
+    '''
+    Create a list of magnetometers that has data for a fraction of the time
+    greater than `percent` (defaults to 75% of total time span.)
+
+    Returns "good mag" list to user. If `verbose` is true, summary is
+    printed to screen.
+    '''
+
+    # Check for data, load if missing.
+    if time is None or mags is None:
+        time, mags = load_gooddata()
+
+    nTime = time.size
+    good_mags = []
+
+    for m in BirdBeaks.std_mags:
+        perc = time[mags[m]].size/nTime
+        if verbose:
+            print(f"{m} -> {perc:06.2%}")
+
+        if perc*100 >= percent:
+            good_mags.append(m)
+
+    return good_mags
+
+
+def summarize_mags(time=None, mags=None):
     '''
     Create a broken bar chart that summarizes the availability of mag data
     over the period of interest.
+
+    Keywords are the time and magnetometer availability arrays as calculated
+    and stored by the `load_gooddata` function. If they are not given,
+    they will be read from file or, if the file is not found, recalculated.
 
     Returns a figure and axes object.
     '''
@@ -85,11 +116,18 @@ def summarize_mags():
     from spacepy.plot import style
     style()
 
-    time, mags = load_gooddata()
+    # Check for data, load if missing.
+    if time is None or mags is None:
+        time, mags = load_gooddata()
 
+    # Create figure/axes.
     fig = plt.figure(figsize=(8.5, 11))
     ax = fig.add_subplot(111)
 
+    # Loop through each magnetometer finding periods where data exists.
+    # MPL's broken_barh function needs start times and width of bar,
+    # so save start when we enter a period of good data and find width
+    # when we leave a period of good data.
     for iMag, m in enumerate(BirdBeaks.std_mags):
         intervals = []
         isTrue = False
@@ -99,13 +137,20 @@ def summarize_mags():
                 tstart = time[i]
             elif isTrue and not x:
                 isTrue = False
-                intervals.append((tstart, time[i]))
+                intervals.append((tstart, time[i]-tstart))
         # Close final interval if last data point is True:
         if x and isTrue:
-            intervals.append((tstart, time[-1]))
-        ax.broken_barh(intervals, (iMag, .25))
+            intervals.append((tstart, time[-1]-tstart))
+        ax.broken_barh(intervals, (iMag-.3, .6))
 
+    # Customize/polish axes.
     ax.set_yticks(np.arange(len(BirdBeaks.std_mags)),
                   labels=BirdBeaks.std_mags)
+
+    ax.set_ylim([-1, len(BirdBeaks.std_mags)])
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Station Data Availability')
+    fig.tight_layout()
 
     return fig, ax
