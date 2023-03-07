@@ -98,6 +98,15 @@ def report_good_mags(time=None, mags=None, percent=75.0, verbose=True):
         if perc*100 >= percent:
             good_mags.append(m)
 
+    # Save mag info to a CSV file.
+    mag_info = supermag.read_statinfo()
+    with open(datadir + 'mag_station_info.csv', 'w') as f:
+        f.write('Station Name, geo lon, geo lat, data coverage\n')
+        for m in BirdBeaks.std_mags:
+            perc = 100. * time[mags[m]].size/nTime
+            f.write(f"{m}, {mag_info[m]['geolon']:06.2f}, ")
+            f.write(f"{mag_info[m]['geolat']:06.2f}, {perc:06.2f}\n")
+
     return good_mags
 
 
