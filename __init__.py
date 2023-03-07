@@ -18,6 +18,8 @@ std_mags = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09',
             'BRD', 'TEO', 'PIN', 'C08', 'C11', 'C12', 'T18', 'T21',
             'T24', 'T56', 'T57', 'SJG', 'NEW', 'VIC', 'C10', 'DSO', 'T15',
             'OTT', 'CLK', 'PBQ', 'CRP', 'RAL', 'FRD', 'MSH', 'T17']
+
+# Mags with at least 75% data coverage over period of interest:
 good_mags = ['FRD', 'RAL', 'OTT', 'VIC', 'NEW', 'SJG', 'PIN', 'TUC', 'BSL',
              'BOU']
 
@@ -213,8 +215,6 @@ class MagArray(object):
         over the interval contained within the object.
         If "comp1/2" is a numpy array of values, that distribution will be
         overplotted for comparison.  Label that data set with *clab*.
-
-
         '''
         import matplotlib.pyplot as plt
 
