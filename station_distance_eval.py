@@ -12,6 +12,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
+import supermag
 import BirdBeaks
 
 # Known bad mags (zero data):
@@ -154,3 +155,117 @@ def summarize_mags(time=None, mags=None):
     fig.tight_layout()
 
     return fig, ax
+
+
+def calc_distance(time=None, mags=None):
+    '''
+    For each radar station, find the nearest magnetometer with good data
+    and calculate the lat and lon distance to that station as a function of
+    time.
+
+    Results are returned to user and also saved as a python pickle.
+    '''
+
+    # Convenience variables:
+    nMag = len(BirdBeaks.std_mags)
+
+    # Check for data, load if missing.
+    if time is None or mags is None:
+        time, mags = load_gooddata()
+
+    # Get radar lat/lons:
+    radars = BirdBeaks.load_radar_info()
+
+    # Get magnetometer locations:
+    # Load magnetometer info:
+    mag_info = supermag.read_statinfo()
+
+    # Create dictionaries of angular distances in lat/lon.
+    # Also create containers for final results:
+    dist_lat, dist_lon = {}, {}
+    dLat, dLon = {}, {}
+    for s in radars:
+        dLat[s], dLon[s] = np.zeros(time.size), np.zeros(time.size)
+        dist_lat[s] = np.zeros(nMag)
+        dist_lon[s] = np.zeros(nMag)
+        for imag, m in enumerate(BirdBeaks.std_mags):
+            dist_lat[s][imag] = np.abs(radars[s][0] - mag_info[m]['geolat'])
+            dist_lon[s][imag] = np.abs(radars[s][1] - mag_info[m]['geolon'])
+
+    # Create magnetometer filter for good data only:
+    filter = np.zeros(nMag, dtype=bool)
+
+    # Now, obtain distance as a function of time:
+    for i in range(time.size):
+        for imag, m in enumerate(BirdBeaks.std_mags):
+            filter[imag] = mags[m][i]
+        for s in radars:
+            dLat[s][i] = dist_lat[s][filter].min()
+            dLon[s][i] = dist_lon[s][filter].min()
+
+    with open(datadir+'radar_mag_distance.pkl', 'wb') as f:
+        pickle.dump((time, dLat, dLon), f)
+
+    return dLat, dLon
+
+
+def viz_distances(time=None, dLat=None, dLon=None):
+    '''
+    Create plots that visualize the lat/lon differences between stations
+    and ground magnetometer stations.
+
+    First 3 kwargs should be the time, dLat, and dLon data as calculated
+    from `calc_distance` function above. If not present, they will be read
+    from a Python pickle.
+    '''
+
+    # Load data if it's not handed over:
+    if time is None or dLat is None or dLon is None:
+        with open(datadir+'radar_mag_distance.pkl', 'rb') as f:
+            time, dLat, dLon = pickle.load(f)
+
+    # Get radar lat/lons:
+    radars = BirdBeaks.load_radar_info()
+
+    # Start by creating a stand-alone figure demonstrating how things
+    # typically vary for a sample station.
+    station = 'KLCH'
+    f1, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+    ax1.plot(time, dLon[station])
+    ax2.plot(time, dLat[station])
+    ax2.set_xlabel('Time')
+    ax1.set_ylabel('$\\Delta Lon$ ($^{\\circ}$)')
+    ax2.set_ylabel('$\\Delta Lat$ ($^{\\circ}$)')
+    ax1.set_title(f'Offset to Nearest Mag: {station}')
+    f1.tight_layout()
+
+    # Now, prepare to show distribution of angular distances by
+    # ordering radar stations by median lon distance.
+    med_lon, med_lat = [], []
+    r_names = list(radars.keys())
+    for r in r_names:
+        med_lon.append(np.median(dLon[r]))
+        med_lat.append(np.median(dLat[r]))
+    r_sort_lon = [x for _, x in sorted(zip(med_lon, r_names))]
+    r_sort_lat = [x for _, x in sorted(zip(med_lat, r_names))]
+
+    # Now, re-order data following our station order:
+    lon_sort, lat_sort = [], []
+    for r in r_sort_lon:
+        lon_sort.append(dLon[r])
+    for r in r_sort_lat:
+        lat_sort.append(dLat[r])
+
+    # Plot sorted boxplot distributions:
+    f2, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+    ax1.set_title('Offset to Nearest Magnetometer')
+    ax1.boxplot(lon_sort, whis=1000, showfliers=False, labels=r_sort_lon)
+    ax2.boxplot(lat_sort, whis=1000, showfliers=False, labels=r_sort_lat)
+
+    # Polish up/label axes:
+    ax1.set_xticklabels(r_sort_lon, rotation=90)
+    ax2.set_xticklabels(r_sort_lat, rotation=90)
+    ax1.set_ylabel('$\\Delta Lon$ ($^{\\circ}$)')
+    ax2.set_ylabel('$\\Delta Lat$ ($^{\\circ}$)')
+    ax2.set_xlabel('Radar Station')
+    f2.tight_layout()
