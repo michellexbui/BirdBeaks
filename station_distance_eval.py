@@ -166,7 +166,7 @@ def summarize_mags(time=None, mags=None):
     return fig, ax
 
 
-def calc_distance(time=None, mags=None):
+def calc_distance(time=None, mags=None, write_single=True):
     '''
     For each radar station, find the nearest magnetometer with good data
     and calculate the lat and lon distance to that station as a function of
@@ -212,8 +212,13 @@ def calc_distance(time=None, mags=None):
             dLat[s][i] = dist_lat[s][filter].min()
             dLon[s][i] = dist_lon[s][filter].min()
 
-    with open(datadir+'radar_mag_distance.pkl', 'wb') as f:
-        pickle.dump((time, dLat, dLon), f)
+    if write_single:
+        with open(datadir+'radar_mag_distance.pkl', 'wb') as f:
+            pickle.dump((time, dLat, dLon), f)
+    else:
+        for s in radars:
+            with open(datadir + f'radar_{s}_mag_dist.pkl', 'wb') as f:
+                pickle.dump((time, dLat[s], dLon[s]), f)
 
     return dLat, dLon
 
@@ -278,3 +283,21 @@ def viz_distances(time=None, dLat=None, dLon=None):
     ax2.set_ylabel('$\\Delta Lat$ ($^{\\circ}$)')
     ax2.set_xlabel('Radar Station')
     f2.tight_layout()
+
+
+def convert_distances_csv():
+    '''
+    Convert pickles to CSV files.
+    '''
+
+    with open(datadir+'radar_mag_distance.pkl', 'rb') as f:
+        time, dLat, dLon = pickle.load(f)
+    radars = BirdBeaks.load_radar_info()
+
+    for r in radars:
+        with open(f"{r}_distance.csv", 'w') as f:
+            f.write(f'Angular distance between radar {r} and nearest ' +
+                    'magneteometer station with good data.\n')
+            f.write('Time,dLon,dLat\n')
+            for t, dlon, dlat in zip(time, dLon[r], dLat[r]):
+                f.write(f"{t.isoformat()}, {dlon:06.3f}, {dlat:06.3f}\n")
