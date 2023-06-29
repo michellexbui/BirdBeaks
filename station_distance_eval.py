@@ -233,6 +233,9 @@ def viz_distances(time=None, dLat=None, dLon=None):
     from a Python pickle.
     '''
 
+    # This is the style we'll use for the paper.
+    plt.style.use('seaborn-talk')
+
     # Load data if it's not handed over:
     if time is None or dLat is None or dLon is None:
         with open(datadir+'radar_mag_distance.pkl', 'rb') as f:
@@ -256,7 +259,13 @@ def viz_distances(time=None, dLat=None, dLon=None):
     # Now, prepare to show distribution of angular distances by
     # ordering radar stations by median lon distance.
     med_lon, med_lat = [], []
-    r_names = list(radars.keys())
+    r_names = []
+    for name in list(radars.keys()):
+        # Skip retired radars
+        if name in BirdBeaks.retired_radars:
+            continue
+        r_names.append(name)
+
     for r in r_names:
         med_lon.append(np.median(dLon[r]))
         med_lat.append(np.median(dLat[r]))
@@ -273,8 +282,9 @@ def viz_distances(time=None, dLat=None, dLon=None):
     # Plot sorted boxplot distributions:
     f2, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
     ax1.set_title('Offset to Nearest Magnetometer')
-    ax1.boxplot(lon_sort, whis=1000, showfliers=False, labels=r_sort_lon)
-    ax2.boxplot(lat_sort, whis=1000, showfliers=False, labels=r_sort_lat)
+    kwargs = {'whis': 1000, 'showfliers': False, 'medianprops': {'c': 'g'}}
+    ax1.boxplot(lon_sort, labels=r_sort_lon, **kwargs)
+    ax2.boxplot(lat_sort, labels=r_sort_lat, **kwargs)
 
     # Polish up/label axes:
     ax1.set_xticklabels(r_sort_lon, rotation=90)

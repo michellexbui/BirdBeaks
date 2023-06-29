@@ -12,6 +12,9 @@ import numpy as np
 # Set install directory:
 install_dir = '/'.join(__loader__.path.split('/')[:-1])+'/'
 
+# Radar stations no longer used:
+retired_radars = ['KBRO', 'KCRP', 'KHGX', 'KLCH']
+
 # Standard magnetometer set for NA interpolation:
 std_mags = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09',
             'M10', 'M11', 'GLN', 'BOU', 'DLR', 'TUL', 'CDP', 'BSL', 'TUC',
